@@ -83,6 +83,16 @@ function ProjectWorkspacePage() {
     }
   };
 
+  const handleToggleActive = async (api) => {
+    try {
+      await apiConfigsAPI.update(api.id, { is_active: !api.is_active });
+      await loadWorkspace();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Failed to toggle API monitoring state.");
+    }
+  };
+
+
   const handleDeleteApi = async (apiId) => {
     if (window.confirm("Are you sure you want to delete this target API?")) {
       try {
@@ -188,6 +198,7 @@ function ProjectWorkspacePage() {
             onEdit={(cfg) => openApiModal(cfg)}
             onDelete={handleDeleteApi}
             onTriggerCheck={handleTriggerCheck}
+            onToggleActive={handleToggleActive}
             checkingApiId={checkingApiId}
           />
         </div>
@@ -200,6 +211,7 @@ function ProjectWorkspacePage() {
           onEdit={(cfg) => openApiModal(cfg)}
           onDelete={handleDeleteApi}
           onTriggerCheck={handleTriggerCheck}
+          onToggleActive={handleToggleActive}
           checkingApiId={checkingApiId}
         />
       )}
@@ -254,7 +266,7 @@ function ProjectWorkspacePage() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => openDriftViewer(iss)}>
-                          Drift Diff
+                          AI Fix
                         </button>
                       </td>
                     </tr>
@@ -269,7 +281,24 @@ function ProjectWorkspacePage() {
       {/* TAB 4: MONITORING */}
       {activeTab === 'monitoring' && (
         <div>
-          <MetricsCharts monitoringLogs={monitoringLogs} issues={issues} />
+          <div className="glass-card" style={{ padding: '1rem', marginBottom: '1.5rem', height: '1000px', width: '100%' }}>
+            <iframe
+              src={`http://localhost:3000/d/api-cortex-monitoring?var-project_id=${encodeURIComponent(projectId)}&kiosk=tv`}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              style={{ borderRadius: '8px' }}
+              title="Grafana Dashboard"
+            ></iframe>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => window.open(`http://localhost:3000/d/api-cortex-monitoring?var-project_id=${encodeURIComponent(projectId)}`, '_blank')}
+            >
+              <BarChart3 size={14} /> Open Full Grafana Dashboard
+            </button>
+          </div>
           <div className="glass-card" style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: '600', marginBottom: '1rem' }}>Recent Monitoring History Logs</h3>
             <div className="table-container">

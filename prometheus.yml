@@ -1,7 +1,8 @@
 # Prometheus Configuration for API Cortex
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 30s
+  scrape_timeout: 25s
+  evaluation_interval: 30s
 
 scrape_configs:
   - job_name: 'api-cortex-backend'

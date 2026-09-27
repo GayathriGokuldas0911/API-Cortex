@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Play, Edit3, Trash2, Server, ExternalLink, Clock, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Play, Edit3, Trash2, Server, ExternalLink, Clock, RefreshCw, CheckCircle, AlertTriangle, PauseCircle, PlayCircle } from 'lucide-react';
 
-function ApiList({ apiConfigs, onEdit, onDelete, onTriggerCheck, checkingApiId }) {
+function ApiList({ apiConfigs, onEdit, onDelete, onTriggerCheck, onToggleActive, checkingApiId }) {
   if (!apiConfigs || apiConfigs.length === 0) {
     return (
       <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
@@ -102,20 +102,36 @@ function ApiList({ apiConfigs, onEdit, onDelete, onTriggerCheck, checkingApiId }
 
                   {/* Health Badge */}
                   <td>
-                    <span className="badge badge-success" style={{ gap: '4px' }}>
-                      <CheckCircle size={12} /> Active
-                    </span>
+                    {config.is_active ? (
+                      <span className="badge badge-success" style={{ gap: '4px' }}>
+                        <CheckCircle size={12} /> Active
+                      </span>
+                    ) : (
+                      <span className="badge badge-warning" style={{ gap: '4px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fcd34d' }}>
+                        <PauseCircle size={12} /> Paused
+                      </span>
+                    )}
                   </td>
 
                   {/* Actions */}
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: '8px' }}>
                       
+                      {/* Toggle Pause / Resume */}
+                      <button 
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => onToggleActive(config)}
+                        title={config.is_active ? "Pause Monitoring" : "Resume Monitoring"}
+                        style={{ padding: '0.4rem 0.5rem', color: config.is_active ? 'var(--status-warning)' : 'var(--status-success)' }}
+                      >
+                        {config.is_active ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
+                      </button>
+
                       {/* Manual Poll Trigger */}
                       <button 
                         className="btn btn-secondary btn-sm"
                         onClick={() => onTriggerCheck(config.id)}
-                        disabled={isChecking}
+                        disabled={isChecking || !config.is_active}
                         title="Trigger Immediate Manual Poll Check"
                         style={{ padding: '0.4rem 0.75rem' }}
                       >

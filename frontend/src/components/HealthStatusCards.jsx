@@ -29,9 +29,6 @@ function HealthStatusCards({ summary }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: '700' }}>{totalApis}</h2>
-          <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
-            {activeApis} Active
-          </span>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
           Continuous HTTP contract polling
@@ -65,22 +62,18 @@ function HealthStatusCards({ summary }) {
       <div className="glass-card glass-card-interactive" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
-            AVG RESPONSE LATENCY
+            AVG RESPONSE TIME
           </span>
-          <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent-purple)' }}>
+          <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--status-danger)' }}>
             <Clock size={20} />
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: '700' }}>{Math.round(avgResponseTimeMs)}<span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-secondary)' }}> ms</span></h2>
-          <span className="badge badge-purple" style={{ fontSize: '0.7rem' }}>HTTPX Client</span>
+          <h2 style={{ fontSize: '2rem', fontWeight: '700' }}>
+            {Math.round(avgResponseTimeMs)}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>ms</span>
+          </h2>
         </div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-          Prometheus Histogram metric
-        </p>
       </div>
-
-
 
     </div>
   );

@@ -322,7 +322,7 @@ function Dashboard() {
                             title="Inspect Schema Drift"
                             style={{ padding: '0.35rem 0.6rem' }}
                           >
-                            <Eye size={14} /> Drift Diff
+                            <Eye size={14} /> AI Fix
                           </button>
 
                           {/* Gemini AI Diagnosis */}
@@ -333,7 +333,7 @@ function Dashboard() {
                             style={{ padding: '0.35rem 0.65rem' }}
                           >
                             <Sparkles size={14} />
-                            {diagnosingIssueId === iss.id ? 'Diagnosing...' : 'AI Fix'}
+                            {diagnosingIssueId === iss.id ? 'Diagnosing...' : 'Diagnose'}
                           </button>
 
                         </div>

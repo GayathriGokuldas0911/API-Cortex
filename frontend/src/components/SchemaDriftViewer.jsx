@@ -53,60 +53,6 @@ function SchemaDriftViewer({ isOpen, onClose, issue, onDiagnose, isDiagnosing })
           </p>
         </div>
 
-        {/* Drift Summary Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          
-          {/* Missing Fields */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem', color: 'var(--status-danger)' }}>
-              <XCircle size={16} />
-              <strong style={{ fontSize: '0.85rem' }}>Missing Fields ({missingFields.length})</strong>
-            </div>
-            {missingFields.length > 0 ? (
-              <ul style={{ paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {missingFields.map((f, i) => <li key={i} className="font-mono">{f}</li>)}
-              </ul>
-            ) : (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None detected</p>
-            )}
-          </div>
-
-          {/* Type Mismatches */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem', color: 'var(--status-warning)' }}>
-              <AlertTriangle size={16} />
-              <strong style={{ fontSize: '0.85rem' }}>Type Mismatches ({typeMismatches.length})</strong>
-            </div>
-            {typeMismatches.length > 0 ? (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {typeMismatches.map((tm, i) => (
-                  <div key={i} className="font-mono" style={{ marginBottom: '4px' }}>
-                    <strong>{tm.field}</strong>: exp <em>{tm.expected}</em>, got <em>{tm.actual}</em>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None detected</p>
-            )}
-          </div>
-
-          {/* Unexpected Fields */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem', color: 'var(--status-info)' }}>
-              <FileCode size={16} />
-              <strong style={{ fontSize: '0.85rem' }}>Extra Fields ({unexpectedFields.length})</strong>
-            </div>
-            {unexpectedFields.length > 0 ? (
-              <ul style={{ paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {unexpectedFields.map((f, i) => <li key={i} className="font-mono">{f}</li>)}
-              </ul>
-            ) : (
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None detected</p>
-            )}
-          </div>
-
-        </div>
-
         {/* Side-by-Side Schema & Payload Comparison */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
           

@@ -17,10 +17,6 @@ function Sidebar({ mobileOpen, onCloseMobile }) {
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/projects', label: 'Projects', icon: FolderKanban },
-    { to: '/apis', label: 'APIs', icon: Server },
-    { to: '/issues', label: 'Issues & Drift', icon: AlertOctagon },
-    { to: '/monitoring', label: 'Monitoring', icon: BarChart3 },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 

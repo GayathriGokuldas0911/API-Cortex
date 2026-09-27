@@ -1,269 +1,183 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useApp } from '../context/AppContext';
-import HealthStatusCards from '../components/HealthStatusCards';
-import MetricsCharts from '../components/MetricsCharts';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
-  dashboardAPI, apiConfigsAPI, issuesAPI, monitoringAPI 
-} from '../api/client';
-import { 
-  RefreshCw, Server, AlertOctagon, Eye, Sparkles, Plus, CheckCircle2, Clock, ExternalLink 
+  FolderKanban, Plus, Server, AlertOctagon, CheckCircle2, ArrowRight, Trash2 
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { projectsAPI, dashboardAPI, apiConfigsAPI } from '../api/client';
 
 function DashboardPage() {
-  const { currentProject, openApiModal, openDriftViewer, openDiagnosisModal } = useApp();
+  const { projects, refreshProjects, selectProject, openProjectModal } = useApp();
+  const navigate = useNavigate();
 
-  const [summary, setSummary] = useState(null);
-  const [apiConfigs, setApiConfigs] = useState([]);
-  const [issues, setIssues] = useState([]);
-  const [monitoringLogs, setMonitoringLogs] = useState([]);
+  const [projectStats, setProjectStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [checkingApiId, setCheckingApiId] = useState(null);
-  const [diagnosingIssueId, setDiagnosingIssueId] = useState(null);
 
-  const loadDashboardData = useCallback(async () => {
+  useEffect(() => {
+    loadAllProjectStats();
+  }, [projects]);
+
+  const loadAllProjectStats = async () => {
     setLoading(true);
-    const projId = currentProject?.id || null;
     try {
-      const [sum, configs, iss, logs] = await Promise.all([
-        dashboardAPI.getSummary(projId).catch(() => null),
-        apiConfigsAPI.getAll(projId).catch(() => []),
-        issuesAPI.getAll(projId ? { project_id: projId } : {}).catch(() => []),
-        monitoringAPI.getLogs(projId ? { project_id: projId } : {}).catch(() => [])
-      ]);
-
-      if (sum) setSummary(sum);
-      if (configs) setApiConfigs(configs);
-      if (iss) setIssues(iss);
-      if (logs) setMonitoringLogs(logs);
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
+      const stats = {};
+      for (const proj of projects) {
+        try {
+          const [sum, apis] = await Promise.all([
+            dashboardAPI.getSummary(proj.id).catch(() => null),
+            apiConfigsAPI.getAll(proj.id).catch(() => [])
+          ]);
+          stats[proj.id] = {
+            totalApis: apis?.length || 0,
+            availability: sum?.availability_percentage ?? 100.0,
+            unresolvedIssues: sum?.unresolved_issues ?? 0,
+            unhealthyApis: sum?.unhealthy_apis ?? 0
+          };
+        } catch (err) {
+          stats[proj.id] = { totalApis: 0, availability: 100.0, unresolvedIssues: 0, unhealthyApis: 0 };
+        }
+      }
+      setProjectStats(stats);
     } finally {
       setLoading(false);
     }
-  }, [currentProject]);
-
-  useEffect(() => {
-    loadDashboardData();
-
-    // Auto-refresh event listener
-    const handleCustomRefresh = () => loadDashboardData();
-    window.addEventListener('api_cortex_refresh', handleCustomRefresh);
-
-    const interval = setInterval(loadDashboardData, 15000);
-    return () => {
-      window.removeEventListener('api_cortex_refresh', handleCustomRefresh);
-      clearInterval(interval);
-    };
-  }, [loadDashboardData]);
-
-  const handleTriggerCheck = async (apiId) => {
-    setCheckingApiId(apiId);
-    try {
-      await apiConfigsAPI.triggerCheck(apiId);
-      await loadDashboardData();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Manual check execution failed.");
-    } finally {
-      setCheckingApiId(null);
-    }
   };
 
-  const handleDiagnose = async (issue) => {
-    setDiagnosingIssueId(issue.id);
-    try {
-      const res = await issuesAPI.diagnose(issue.id);
-      openDiagnosisModal(res, issue);
-      await loadDashboardData();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Failed to trigger Gemini diagnosis.");
-    } finally {
-      setDiagnosingIssueId(null);
+  const handleOpenWorkspace = (proj) => {
+    selectProject(proj);
+    navigate(`/projects/${proj.id}`);
+  };
+
+  const handleDeleteProject = async (e, projId) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this project workspace? All associated APIs and logs will be permanently deleted.")) {
+      try {
+        await projectsAPI.delete(projId);
+        await refreshProjects();
+      } catch (err) {
+        alert(err.response?.data?.detail || "Failed to delete project.");
+      }
     }
   };
 
   return (
     <div>
       {/* Header Banner */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{ fontSize: '1.75rem', fontWeight: '700', letterSpacing: '-0.02em' }}>
-              {currentProject ? currentProject.name : 'System Overview Dashboard'}
+              Dashboard
             </h1>
-            <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>
-              {currentProject ? 'Project Workspace' : 'All Workspaces'}
-            </span>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-            {currentProject?.description || 'Real-time API contract validation, SLA availability, and Gemini AI failure diagnosis.'}
+            Your Projects<br/>
+            Manage and access your API monitoring workspaces.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button 
-            className="btn btn-secondary btn-sm"
-            onClick={loadDashboardData}
-            title="Refresh Metrics"
-          >
-            <RefreshCw size={14} className={loading ? 'spin-loader' : ''} /> Refresh
-          </button>
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={() => openApiModal()}
-          >
-            <Plus size={14} /> Monitored API
-          </button>
-        </div>
+        <button 
+          className="btn btn-primary"
+          onClick={() => openProjectModal()}
+        >
+          <Plus size={16} /> + New Project
+        </button>
       </div>
 
-      {/* Main KPI Stat Cards */}
-      <HealthStatusCards summary={summary} />
-
-      {/* Latency Trends & Issues Charts */}
-      <MetricsCharts monitoringLogs={monitoringLogs} issues={issues} />
-
-      {/* Quick Access Grid: Active Monitored APIs & Recent Issues */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        
-        {/* Monitored APIs Widget */}
-        <div className="glass-card" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Server size={18} style={{ color: 'var(--accent-cyan)' }} />
-              <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Monitored APIs ({apiConfigs.length})</h3>
-            </div>
-            <Link to="/apis" style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', textDecoration: 'none' }}>
-              View All APIs →
-            </Link>
-          </div>
-
-          {apiConfigs.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No target APIs registered under this workspace.
-            </div>
-          ) : (
-            <div className="table-container">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>API</th>
-                    <th>Interval</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiConfigs.slice(0, 5).map(cfg => (
-                    <tr key={cfg.id}>
-                      <td>
-                        <Link to={`/apis/${cfg.id}`} style={{ fontWeight: '600', color: 'var(--text-primary)', textDecoration: 'none' }}>
-                          {cfg.name}
-                        </Link>
-                        <div className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          {cfg.method} {cfg.url}
-                        </div>
-                      </td>
-                      <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        {cfg.polling_interval_seconds}s
-                      </td>
-                      <td>
-                        <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>
-                          Active
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button 
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleTriggerCheck(cfg.id)}
-                          disabled={checkingApiId === cfg.id}
-                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                        >
-                          <RefreshCw size={12} className={checkingApiId === cfg.id ? 'spin-loader' : ''} />
-                          {checkingApiId === cfg.id ? 'Checking...' : 'Check'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Projects Grid */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+          <div style={{
+            width: '40px', height: '40px', border: '3px solid rgba(0, 242, 254, 0.2)',
+            borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', animation: 'spin 1s linear infinite'
+          }}></div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
-
-        {/* Recent Issues & Drift Widget */}
-        <div className="glass-card" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertOctagon size={18} style={{ color: 'var(--status-danger)' }} />
-              <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Recent Contract Issues ({issues.length})</h3>
-            </div>
-            <Link to="/issues" style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', textDecoration: 'none' }}>
-              View All Issues →
-            </Link>
+      ) : projects.length === 0 ? (
+        <div className="glass-card" style={{ padding: '3.5rem 2rem', textAlign: 'center' }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: 'rgba(0, 242, 254, 0.1)',
+            color: 'var(--accent-cyan)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.25rem auto'
+          }}>
+            <FolderKanban size={30} />
           </div>
-
-          {issues.length === 0 ? (
-            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--status-success)', fontSize: '0.9rem' }}>
-              <CheckCircle2 size={32} style={{ margin: '0 auto 0.5rem auto' }} />
-              All API contracts and endpoints are healthy!
-            </div>
-          ) : (
-            <div className="table-container">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>Type & API</th>
-                    <th>Error Summary</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {issues.slice(0, 5).map(iss => (
-                    <tr key={iss.id}>
-                      <td>
-                        <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>
-                          {iss.issue_type}
-                        </span>
-                        <div style={{ fontWeight: '600', fontSize: '0.82rem', marginTop: '2px' }}>
-                          {iss.api_name || `API #${iss.api_config_id}`}
-                        </div>
-                      </td>
-                      <td style={{ maxWidth: '200px' }}>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {iss.error_details}
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          <button 
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => openDriftViewer(iss)}
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
-                            title="Inspect Schema Drift"
-                          >
-                            <Eye size={12} /> Drift
-                          </button>
-                          <button 
-                            className="btn btn-primary btn-sm"
-                            onClick={() => handleDiagnose(iss)}
-                            disabled={diagnosingIssueId === iss.id}
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem' }}
-                            title="Run Gemini AI Diagnosis"
-                          >
-                            <Sparkles size={12} /> AI Fix
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>No projects yet</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto 1.5rem auto' }}>
+            Create your first project to start monitoring APIs.
+          </p>
+          <button className="btn btn-primary" onClick={() => openProjectModal()}>
+            <Plus size={16} /> + Create Project
+          </button>
         </div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '1.5rem'
+        }}>
+          {projects.map(proj => {
+            const st = projectStats[proj.id] || { totalApis: 0, availability: 100.0, unresolvedIssues: 0, unhealthyApis: 0 };
+            const isHealthy = st.unresolvedIssues === 0 && st.unhealthyApis === 0;
 
-      </div>
+            return (
+              <div 
+                key={proj.id}
+                className="glass-card glass-card-interactive"
+                style={{ padding: '1.5rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                onClick={() => handleOpenWorkspace(proj)}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FolderKanban size={18} style={{ color: 'var(--accent-cyan)' }} />
+                      <span style={{ fontSize: '1.2rem', fontWeight: '600', color: 'var(--text-primary)' }}>{proj.name}</span>
+                    </div>
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={(e) => handleDeleteProject(e, proj.id)}
+                      title="Delete Project"
+                      style={{ padding: '0.25rem 0.45rem', opacity: 0.8 }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', minHeight: '40px', lineHeight: '1.4', marginTop: '0.5rem' }}>
+                    {proj.description || 'API monitoring and contract drift detection workspace.'}
+                  </p>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    
+                    <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '0.6rem 0.75rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>APIs:</span>
+                      <div style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                        {st.totalApis}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button className="btn btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      Open Project
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
 
     </div>
   );

@@ -209,9 +209,9 @@ function IssuesPage() {
                           className="btn btn-secondary btn-sm"
                           onClick={() => openDriftViewer(iss)}
                           style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
-                          title="Inspect Schema Drift Diff"
+                          title="Compare Expected and Actual Schemas"
                         >
-                          Drift
+                          AI Fix
                         </button>
 
                         {/* Gemini AI Diagnosis */}
@@ -223,7 +223,7 @@ function IssuesPage() {
                           title="Run Gemini AI Root Cause Diagnosis"
                         >
                           <Sparkles size={12} />
-                          {diagnosingIssueId === iss.id ? 'Diagnosing...' : 'AI Fix'}
+                          {diagnosingIssueId === iss.id ? 'Diagnosing...' : 'Diagnose'}
                         </button>
 
                       </div>

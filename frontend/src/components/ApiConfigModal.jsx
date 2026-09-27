@@ -186,16 +186,6 @@ function ApiConfigModal({ isOpen, onClose, onSaveSuccess, editingConfig }) {
     }
   };
 
-  const handleLoadSample = () => {
-    setName('JSONPlaceholder Post #1');
-    setUrl('https://jsonplaceholder.typicode.com/posts/1');
-    setMethod('GET');
-    setHeaders('{}');
-    setExpectedStatusCode(200);
-    setExpectedSchema(JSON.stringify(SAMPLE_SCHEMA, null, 2));
-    setPollingInterval(30);
-  };
-
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: '680px', padding: '1.75rem' }}>
@@ -305,11 +295,6 @@ function ApiConfigModal({ isOpen, onClose, onSaveSuccess, editingConfig }) {
               </div>
             </div>
 
-            <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={handleLoadSample}>
-                Pre-fill Example API Data
-              </button>
-            </div>
           </div>
         )}
 
@@ -357,9 +342,35 @@ function ApiConfigModal({ isOpen, onClose, onSaveSuccess, editingConfig }) {
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                 <label className="form-label" style={{ marginBottom: 0 }}>Expected JSON Schema (Structural / Draft 7)</label>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setExpectedSchema(JSON.stringify(SAMPLE_SCHEMA, null, 2))}>
-                  Reset to Sample Schema
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                    Upload Schema
+                    <input 
+                      type="file" 
+                      accept=".json"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              const parsed = JSON.parse(event.target.result);
+                              setExpectedSchema(JSON.stringify(parsed, null, 2));
+                              setError(null);
+                            } catch (err) {
+                              setError("Invalid JSON file uploaded.");
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setExpectedSchema(JSON.stringify(SAMPLE_SCHEMA, null, 2))}>
+                    Reset to Sample Schema
+                  </button>
+                </div>
               </div>
               <textarea 
                 className="form-textarea"

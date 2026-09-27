@@ -316,7 +316,7 @@ function ApiDetailsPage() {
                             }}
                             style={{ padding: '0.3rem 0.55rem' }}
                           >
-                            <Sparkles size={12} /> AI Fix
+                            <Sparkles size={12} /> Diagnose
                           </button>
                         </div>
                       </td>

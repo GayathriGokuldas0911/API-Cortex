@@ -6,8 +6,8 @@ import {
 import { TrendingUp, BarChart2, Activity } from 'lucide-react';
 
 function MetricsCharts({ monitoringLogs, issues }) {
-  // Format monitoring logs for line chart
-  const latencyData = (monitoringLogs || []).slice(-15).map(log => ({
+  // Format monitoring logs for line chart (take 15 newest, then reverse for chronological order)
+  const latencyData = [...(monitoringLogs || [])].slice(0, 15).reverse().map(log => ({
     time: new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     latency: Math.round(log.response_time_ms || 0),
     status: log.status_code,
@@ -77,7 +77,6 @@ function MetricsCharts({ monitoringLogs, issues }) {
             <BarChart2 size={18} style={{ color: 'var(--status-danger)' }} />
             <h4 style={{ fontSize: '0.95rem', fontWeight: '600' }}>Contract & Issue Breakdown</h4>
           </div>
-          <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>Schema Drift</span>
         </div>
 
         {issueData.length > 0 ? (
