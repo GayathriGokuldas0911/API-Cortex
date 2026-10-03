@@ -81,6 +81,13 @@ async def execute_api_monitoring_check(api_config: ApiConfig, db: Session) -> Di
                         issue_type = "TYPE_MISMATCH"
                     error_message = f"Schema drift detected: {validation_res.summary}"
 
+            # 3. Check Latency
+            if is_healthy and api_config.max_response_time_ms is not None:
+                if response_time_ms > api_config.max_response_time_ms:
+                    is_healthy = False
+                    issue_type = "HIGH_LATENCY"
+                    error_message = f"Response time exceeded threshold. Expected <= {api_config.max_response_time_ms} ms, received {response_time_ms} ms."
+
     except httpx.TimeoutException:
         elapsed = time.perf_counter() - start_time
         response_time_seconds = elapsed

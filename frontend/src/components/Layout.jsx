@@ -27,7 +27,7 @@ function Layout() {
     try {
       const res = await issuesAPI.diagnose(issueId);
       closeDriftViewer();
-      openDiagnosisModal(res.diagnosis, selectedIssue);
+      openDiagnosisModal(res, selectedIssue);
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to generate Gemini AI diagnosis.");
     } finally {

@@ -276,14 +276,18 @@ def get_effective_gemini_api_key(api_key: Optional[str] = None) -> str:
     Retrieves the Gemini API key from explicit argument, settings, or .env.
     Validates that the key is present and not a dummy placeholder.
     """
-    key = api_key or getattr(settings, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
-    key = key.strip()
+    if api_key and api_key.strip() not in {"your_gemini_api_key_here", "TODO", "PLACEHOLDER"}:
+        return api_key.strip()
+    
+    for key_attr in ["GEMINI_API_KEY_1", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3", "GEMINI_API_KEY"]:
+        key = getattr(settings, key_attr, "") or os.environ.get(key_attr, "")
+        key = key.strip()
+        if key and key not in {"your_gemini_api_key_here", "TODO", "PLACEHOLDER"}:
+            return key
 
-    if not key or key in {"your_gemini_api_key_here", "TODO", "PLACEHOLDER"}:
-        raise GeminiAPIKeyMissingError(
-            "Gemini API key is not configured. Please set a valid GEMINI_API_KEY in your .env file."
-        )
-    return key
+    raise GeminiAPIKeyMissingError(
+        "Gemini API key is not configured. Please set a valid GEMINI_API_KEY in your .env file."
+    )
 
 
 def call_gemini_api(
@@ -381,21 +385,47 @@ def diagnose_issue(
     # 1. Fetch and validate issue from PostgreSQL
     issue = get_issue_for_diagnosis(db, issue_id)
 
-    # 2. Get validated API key
-    effective_api_key = get_effective_gemini_api_key(api_key)
+    # 2. Try all available API keys
+    keys_to_try = []
+    if api_key and api_key.strip() not in {"your_gemini_api_key_here", "TODO", "PLACEHOLDER"}:
+        keys_to_try.append(api_key.strip())
+    
+    for key_attr in ["GEMINI_API_KEY_1", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3", "GEMINI_API_KEY"]:
+        k = getattr(settings, key_attr, "") or os.environ.get(key_attr, "")
+        k = k.strip()
+        if k and k not in {"your_gemini_api_key_here", "TODO", "PLACEHOLDER"} and k not in keys_to_try:
+            keys_to_try.append(k)
+
+    if not keys_to_try:
+        raise GeminiAPIKeyMissingError("Gemini API key is not configured. Please set a valid GEMINI_API_KEY in your .env file.")
+
     effective_model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_GEMINI_MODEL
 
     # 3. Build focused diagnostic payload (NO Prometheus metrics included)
     context = build_diagnostic_payload(issue)
     prompt = format_gemini_prompt(context)
 
-    # 4. Invoke Gemini AI
-    diagnosis_response = call_gemini_api(
-        prompt=prompt,
-        api_key=effective_api_key,
-        model=effective_model,
-        client_override=client_override
-    )
+    # 4. Invoke Gemini AI with fallback
+    diagnosis_response = None
+    last_error = None
+    for k in keys_to_try:
+        try:
+            diagnosis_response = call_gemini_api(
+                prompt=prompt,
+                api_key=k,
+                model=effective_model,
+                client_override=client_override
+            )
+            break # Success!
+        except (GeminiInvalidKeyError, GeminiQuotaExceededError) as e:
+            last_error = e
+            logger.warning(f"Key failed, trying next. Error: {e}")
+            continue # Try next key
+            
+    if diagnosis_response is None:
+        if last_error:
+            raise last_error
+        raise GeminiServiceError("Failed to get diagnosis using all available API keys.")
 
     # 5. Persist diagnosis in PostgreSQL (associate with issue, API config, and project)
     existing_diagnosis = db.query(AiDiagnosis).filter(AiDiagnosis.issue_id == issue.id).first()

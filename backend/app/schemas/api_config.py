@@ -13,6 +13,7 @@ class ApiConfigBase(BaseModel):
     expected_schema: Optional[Dict[str, Any]] = None
     environment: str = "production"
     polling_interval_seconds: int = 60
+    max_response_time_ms: Optional[int] = None
     is_active: bool = True
 
 
@@ -30,6 +31,7 @@ class ApiConfigUpdate(BaseModel):
     expected_schema: Optional[Dict[str, Any]] = None
     environment: Optional[str] = None
     polling_interval_seconds: Optional[int] = None
+    max_response_time_ms: Optional[int] = None
     is_active: Optional[bool] = None
 
 

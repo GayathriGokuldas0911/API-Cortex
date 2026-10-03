@@ -18,6 +18,7 @@ class ApiConfig(Base):
     expected_schema = Column(JSON, nullable=True)
     environment = Column(String(50), default="production")
     polling_interval_seconds = Column(Integer, default=60)
+    max_response_time_ms = Column(Integer, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY_1: str = ""
+    GEMINI_API_KEY_2: str = ""
+    GEMINI_API_KEY_3: str = ""
     PROMETHEUS_METRICS_PATH: str = "/metrics"
 
     model_config = SettingsConfigDict(

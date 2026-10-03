@@ -139,7 +139,7 @@ function Dashboard() {
     setDiagnosingIssueId(issueId);
     try {
       const result = await issuesAPI.diagnose(issueId);
-      setCurrentDiagnosis(result.diagnosis);
+      setCurrentDiagnosis(result);
       setIsDriftViewerOpen(false);
       setIsDiagnosisModalOpen(true);
       await fetchDashboardDataSilently();
